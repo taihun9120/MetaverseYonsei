@@ -1,14 +1,16 @@
 // System
 using System;
+using System.Collections;
 
 // Unity
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.Networking;
 
 using TMPro;
-//using LitJson;
-using System.Net;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 public class LoginManager : MonoBehaviour
 {
@@ -33,16 +35,22 @@ public class LoginManager : MonoBehaviour
     public TMP_InputField input_password_S = null;
     public Button btn_signup_send = null;
 
-    //[Header("Popups")]
-    //public AlertPopup loginPopup = null;
+    [Header("Popups")]
+    public GameObject alertPopup = null;
+    public TextMeshProUGUI alertText = null;
+    public Button buttonCloseAlert = null;
 
     [Header("Settings")]
     public float fadeDuration = 1.0f;
 
+    [Header("UserData")]
+    public UserData userData = null;
+
+    string url = "http://3.38.107.143:8080/api/";
+
     private void Awake()
     {
         //Debug.LogNetwork("Scene Loaded", "SceneName._01_Login");
-
         AddListeners();
     }
 
@@ -53,7 +61,8 @@ public class LoginManager : MonoBehaviour
         btn_sign_up.onClick.AddListener(OnSignupScreenButtonClicked);
         btn_close_signup_screen.onClick.AddListener(OnCloseSignupScreenButtonClicked);
         btn_login.onClick.AddListener(OnLoginButtonClicked);
-        btn_signup_send.onClick.AddListener(OnLoginButtonClicked);
+        btn_signup_send.onClick.AddListener(OnSignupSendButtonClicked);
+        buttonCloseAlert.onClick.AddListener(OnCloseAlertButtonClicked);
     }
 
     private void OnLoginScreenButtonClicked(){
@@ -84,119 +93,109 @@ public class LoginManager : MonoBehaviour
 
     private void OnLoginButtonClicked()
     {
-        SceneManager.LoadScene("Lobby");
-
-        int accountType = 0;
         string id = input_id.text.Trim();
         string password = input_password.text.Trim();
 
-        //if (id == string.Empty || password == string.Empty)
-        //{
-        //    loginPopup.ShowDialog("알림", "아이디 또는 비밀번호를 입력해주세요");
-        //    return;
-        //}
-
-        #region WEBREQUESTOR
-        LoginData loginData = new LoginData
+        JObject loginObject = new JObject
         {
-            accountType = accountType,
-            id = id,
-            password = password
+            { "email", id },
+            { "password", password }
         };
 
-        //string json = JsonMapper.ToJson(loginData);
-        //WebRequestor.Post("https://perdoco-lobby-prod.koreacentral.cloudapp.azure.com/api/Lobby/Login", json, (responseCode, result) =>
-        //{
-        //    if (responseCode == ResultCode.SUCCESS)
-        //    {
-        //        JsonData commonData = JsonMapper.ToObject(result);
-        //        int resultCode = commonData[nameof(resultCode)].IntegerValue(200);
-        //        string code = commonData[nameof(code)].StringValue();
-        //        string description = commonData[nameof(description)].StringValue();
-        //        string jwtToken = commonData[nameof(jwtToken)].StringValue();
+        if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(password))
+        {
+            AlertPopup("아이디 또는 비밀번호를 입력해주세요");
+            return;
+        }
 
-        //        if (resultCode == 1 || resultCode == 2 || resultCode == 7)
-        //        {
-        //            loginPopup.ShowDialog("알림", $"아이디와 비밀번호를 확인해주세요.");
-        //            return;
-        //        }
-
-
-        //        if (resultCode != 200)
-        //        {
-        //            loginPopup.ShowDialog("알림", $"서버와의 통신에 실패했습니다.");
-        //            return;
-        //        }
-
-
-        //        JsonData studentData = commonData["student"];
-        //        int studentNo = studentData[nameof(studentNo)].IntegerValue();
-        //        string _class = studentData["class"].StringValue();
-        //        string createDate = studentData[nameof(createDate)].StringValue();
-        //        string grade = studentData[nameof(grade)].StringValue();
-        //        string id = studentData[nameof(id)].StringValue();
-        //        bool isFirstLogin = studentData[nameof(isFirstLogin)].BoolValue();
-        //        string name = studentData[nameof(name)].StringValue();
-        //        int number = studentData[nameof(number)].IntegerValue();
-        //        string updateDate = studentData[nameof(updateDate)].StringValue();
-        //        bool validity = studentData[nameof(validity)].BoolValue();
-        //        int managerNo = studentData[nameof(managerNo)].IntegerValue();
-        //        int schoolNo = studentData[nameof(schoolNo)].IntegerValue();
-        //        bool passwordReset = studentData[nameof(passwordReset)].BoolValue();
-
-        //        UserData.studentNo = studentNo;
-        //        UserData._class = _class;
-        //        UserData.createDate = createDate;
-        //        UserData.grade = grade;
-        //        UserData.id = id;
-        //        UserData.password = password;
-        //        UserData.isFirstLogin = isFirstLogin;
-        //        UserData.name = name;
-        //        UserData.number = number;
-        //        UserData.updateDate = updateDate;
-        //        UserData.validity = validity;
-        //        UserData.managerNo = managerNo;
-        //        UserData.schoolNo = schoolNo;
-        //        UserData.passwordReset = passwordReset;
-        //        UserData.jwtToken = jwtToken;
-
-        //        if (toggle_remember_user_date.isOn)
-        //        {
-        //            PlayerPrefs.SetInt("toggle", 1);
-        //            PlayerPrefs.SetString("id", id);
-        //            PlayerPrefs.SetString("password", password);
-        //        }
-        //        else
-        //        {
-        //            PlayerPrefs.SetInt("toggle", 0);
-        //            PlayerPrefs.SetString("id", string.Empty);
-        //            PlayerPrefs.SetString("password", string.Empty);
-        //        }
-
-        //        ScreenHelper.FadeOut(fadeDuration, () =>
-        //        {
-        //            Debug.LogNetwork("Scene Load Start", "SceneName._01_Login -> SceneName._98_ServerConnection");
-        //            SceneManager.LoadScene(SceneName._98_ServerConnection);
-        //        });
-        //    }
-        //    else
-        //    {
-        //        loginPopup.ShowDialog("알림", $"서버와의 통신에 실패했습니다.\n인터넷 연결 상태를 확인해주세요"); // \n({responseCode})
-        //    }
-        //});
-        #endregion
+        StartCoroutine(LogIn(JsonConvert.SerializeObject(loginObject)));
     }
 
     private void OnSignupSendButtonClicked()
     {
-        //SceneManager.LoadScene("Lobby");
+        string name = input_name_S.text.Trim();
+        string school = input_school_S.text.Trim();
+        string stid = input_stid_S.text.Trim();
+        string id = input_id_S.text.Trim();
+        string password = input_password_S.text.Trim();
+
+        JObject signupObject = new()
+        {
+            { "email", id },
+            { "name", name },
+            { "password", password },
+            { "school", school },
+            { "studentNumber", stid }
+        };
+
+        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(school) || string.IsNullOrEmpty(stid)
+            || string.IsNullOrEmpty(id) || string.IsNullOrEmpty(password))
+        {
+            AlertPopup("회원가입에 필요한 정보를 입력해주세요");
+            return;
+        }
+
+        StartCoroutine(SignUp(JsonConvert.SerializeObject(signupObject)));
     }
 
-    [Serializable]
-    public class LoginData
+    private void OnCloseAlertButtonClicked()
     {
-        public int accountType;
-        public string id;
-        public string password;
+        alertPopup.SetActive(false);
+    }
+
+    private void AlertPopup(string text)
+    {
+        alertPopup.SetActive(true);
+        alertText.text = text;
+    }
+
+    private IEnumerator LogIn(string json)
+    {
+        using UnityWebRequest www = UnityWebRequest.Post(url + "auth/signin", json);
+        byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(json);
+        www.uploadHandler = new UploadHandlerRaw(jsonToSend);
+        www.downloadHandler = new DownloadHandlerBuffer();
+        www.SetRequestHeader("Content-Type", "application/json");
+        www.SetRequestHeader("accept", "*/*");
+        //www.SetRequestHeader("Authorization", token);
+
+        yield return www.SendWebRequest();
+
+        if (www.responseCode == 200)
+        {
+            SceneManager.LoadScene("Lobby");
+            JObject responseBody = JObject.Parse(www.downloadHandler.text);
+            string token = responseBody["result"]["token"].ToString();
+            userData.SetToken(url, token);
+        }
+        else
+        {
+            AlertPopup("연결에 실패하였습니다.");
+        }
+    }
+
+    private IEnumerator SignUp(string json)
+    {
+        using UnityWebRequest www = UnityWebRequest.Post(url + "auth/signup", json);
+        byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(json);
+        www.uploadHandler = new UploadHandlerRaw(jsonToSend);
+        www.downloadHandler = new DownloadHandlerBuffer();
+        www.SetRequestHeader("Content-Type", "application/json");
+        www.SetRequestHeader("accept", "*/*");
+
+        yield return www.SendWebRequest();
+
+        if (www.responseCode == 200)
+        {
+            AlertPopup("회원가입에 성공했습니다.");
+        }
+        else if (www.responseCode == 409)
+        {
+            AlertPopup("이미 가입된 아이디입니다.");
+        }
+        else
+        {
+            AlertPopup("회원가입에 실패했습니다.");
+        }
     }
 }
